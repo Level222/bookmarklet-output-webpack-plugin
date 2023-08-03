@@ -1,0 +1,37 @@
+{
+  "name": "bookmarklet-output-webpack-plugin",
+  "version": "1.0.0",
+  "description": "Webpack Plugin to output JavaScript in bookmarklet format.",
+  "keywords": [
+    "bookmarklet",
+    "webpack",
+    "webpack5",
+    "plugin",
+    "webpack-plugin"
+  ],
+  "homepage": "https://github.com/Level222/bookmarklet-output-webpack-plugin#readme",
+  "bugs": {
+    "url" : "https://github.com/Level222/bookmarklet-output-webpack-plugin/issues"
+  },
+  "license": "MIT",
+  "author": "Level222",
+  "files": [
+    "dist/"
+  ],
+  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Level222/bookmarklet-output-webpack-plugin.git"
+  },
+  "scripts": {
+    "build": "rm -rf ./dist && tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.4.5",
+    "typescript": "^5.1.6"
+  },
+  "peerDependencies": {
+    "webpack": "^5.0.0"
+  }
+}
