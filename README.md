@@ -77,7 +77,7 @@ javascript:alert(%22Hello%22)%3B
 ## Options
 
 ```typescript
-{
+type Options = {
   urlEncode?: boolean;
   // default: true
   // URL encoding.
