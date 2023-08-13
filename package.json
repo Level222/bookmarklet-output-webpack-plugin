@@ -1,6 +1,6 @@
 {
   "name": "bookmarklet-output-webpack-plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Webpack Plugin to output JavaScript in bookmarklet format.",
   "keywords": [
     "bookmarklet",
