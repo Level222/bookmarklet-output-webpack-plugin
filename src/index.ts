@@ -35,7 +35,7 @@ class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
     bookmarkletsList: false,
     bookmarkletsListName: "bookmarklets.html",
     removeEntryFile: false,
-    createBookmarkletsList: (bookmarklets: Bookmarklet[]): string => {
+    createBookmarkletsList: (bookmarklets) => {
       const bookmarkletsListItems = bookmarklets.map(({ filename, bookmarklet }) => (
         `<li><a href="${escapeHtml(bookmarklet)}">${escapeHtml(filename)}</a></li>`
       ));
