@@ -45,16 +45,15 @@ class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
         <html lang="en">
         <head>
           <meta charset="UTF-8">
-          <meta name="viewport" content=width=device-width, initial-scale=1.0">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Bookmarklets</title>
-          <style>body{font:18px sans-serif;margin:20px}</style>
         </head>
-        <body>
+        <body style="font:18px sans-serif;margin:20px">
           <p>You can drag the following bookmarklets and register for the bookmark.</p>
           <ul>${bookmarkletsListItems.join("")}</ul>
         </body>
         </html>
-      `.replace(/^\s+|\s+$|\n/mg, "");
+      `.replace(/^\s+|\n/mg, "");
     }
   };
 
