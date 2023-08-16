@@ -16,5 +16,5 @@ export const removeIndent = templateUsingOriginalString((originalString) => {
 });
 
 export const oneLine = templateUsingOriginalString((originalString) => {
-  return originalString.replace(/^\s+|\n/, "");
+  return originalString.replace(/^\s+|\n/gm, "");
 });
