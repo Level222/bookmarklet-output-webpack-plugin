@@ -24,7 +24,9 @@
     "url": "https://github.com/Level222/bookmarklet-output-webpack-plugin.git"
   },
   "scripts": {
-    "build": "rm -rf ./dist && tsc",
+    "build": "npm run build:clean && tsc",
+    "build:clean": "rm -rf ./dist",
+    "watch": "npm run build:clean && tsc --watch",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
