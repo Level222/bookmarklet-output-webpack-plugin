@@ -1,5 +1,8 @@
 import path from "path";
+import { escapeHtml } from "./utils/escape-html";
+import { ReloadServer } from "./reload-server";
 import type { WebpackPluginInstance, Compiler } from "webpack";
+import { oneLine } from "./utils/format-template";
 
 type Bookmarklet = {
   filename: string;
@@ -15,19 +18,11 @@ type Options = {
   bookmarkletsListName: string;
   removeEntryFile: boolean;
   createBookmarkletsList: (bookmarklets: Bookmarklet[]) => string;
-};
-
-const escapeHtml = (str: string): string => {
-  return str
-    .replaceAll("&", "&amp;")
-    .replaceAll('"', "&#34;")
-    .replaceAll("'", "&#39;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
+  dynamicScripting: boolean;
 };
 
 class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
-  static defaultOptions: Options = {
+  public static defaultOptions: Options = {
     urlEncode: true,
     include: /\.js$/,
     newFile: false,
@@ -40,7 +35,7 @@ class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
         `<li><a href="${escapeHtml(bookmarklet)}">${escapeHtml(filename)}</a></li>`
       ));
 
-      return `
+      return oneLine`
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -53,21 +48,25 @@ class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
           <ul>${bookmarkletsListItems.join("")}</ul>
         </body>
         </html>
-      `.replace(/^\s+|\n/mg, "");
-    }
+      `;
+    },
+    dynamicScripting: true,
   };
 
-  options: Options;
+  public options: Options;
+  private server?: ReloadServer;
 
-  constructor(options?: Partial<Options>) {
+  public constructor(options?: Partial<Options>) {
     this.options = {
       ...BookmarkletOutputWebpackPlugin.defaultOptions,
       ...options
     };
   }
 
-  apply(compiler: Compiler): void {
+  public apply(compiler: Compiler): void {
     const pluginName = BookmarkletOutputWebpackPlugin.name;
+
+    const logger = compiler.getInfrastructureLogger(pluginName);
 
     const {
       Compilation,
@@ -85,14 +84,22 @@ class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
             this.options.include.test(filename)
           ));
 
-          const bookmarklets: Bookmarklet[] = targetAssets.map(([filename, asset]) => {
-            const code = asset.source();
+          const bookmarkletScripts = targetAssets.map(([filename, asset]) => {
+            const script = asset.source();
 
-            if (typeof code !== "string") {
+            if (typeof script !== "string") {
               throw new TypeError(`${filename} is not a text file.`);
             }
 
-            const bookmarklet = `javascript:${this.options.urlEncode ? encodeURIComponent(code) : code}`;
+            return { filename, script };
+          });;
+
+          if (this.server) {
+            this.server.setBookmarkletScripts(bookmarkletScripts);
+          }
+
+          const bookmarklets: Bookmarklet[] = bookmarkletScripts.map(({ filename, script }) => {
+            const bookmarklet = `javascript:${this.options.urlEncode ? encodeURIComponent(script) : script}`;
             return { filename, bookmarklet };
           });
 
@@ -123,6 +130,18 @@ class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
             compilation.emitAsset(this.options.bookmarkletsListName, bookmarkletsListSource);
           }
         });
+    });
+
+    compiler.hooks.watchRun.tap(pluginName, () => {
+      if (this.options.dynamicScripting && !this.server) {
+        this.server = new ReloadServer(1234, logger);
+        this.server.start();
+      }
+    });
+
+    compiler.hooks.watchClose.tap(pluginName, () => {
+      this.server?.close();
+      this.server = undefined;
     });
   }
 };
