@@ -83,30 +83,9 @@ export class ReloadServer {
   };
 
   private async createListResponse(bookmarkletScripts: BookmarkletScript[]): Promise<ResponseData> {
-    const reloadBookmarkletListItems = await mapAsync(bookmarkletScripts, async ({ filename }) => {
-      const scriptUrl = new URL("/file", this.origin);
-      scriptUrl.searchParams.set("filename", await sha256(filename));
-
-      const errorMessage = removeIndent`
-        [BookmarkletOutputWebpackPlugin]
-        An error has occurred while loading the script.
-        It is possible that webpack has not been watched, the webpack process has not finished, the URL is invalid, or access to the local server has failed.
-        Please wait a moment and try again.
-      `;
-
-      const reloadBookmarkletCode = oneLine`
-        (function(s){
-          s.src=${embedJson(scriptUrl.href)};
-          s.addEventListener("error",function(){
-            alert(${embedJson(errorMessage)})
-          });
-          document.body.appendChild(s);
-          s.parentNode.removeChild(s)
-        })(document.createElement('script'))
-      `;
-
-      const anchorHref = `javascript:${encodeURIComponent(reloadBookmarkletCode)}`;
-      return `<li><a href="${anchorHref}">[w] ${escapeHtml(filename)}</a></li>`;
+    const dynamicScriptingBookmarkletListItems = await mapAsync(bookmarkletScripts, async ({ filename }) => {
+      const bookmarklet = this.createDynamicScriptingBookmarklet(filename);
+      return `<li><a href="${bookmarklet}">[w] ${escapeHtml(filename)}</a></li>`;
     });
 
     const content = oneLine`
@@ -119,7 +98,7 @@ export class ReloadServer {
       </head>
       <body style="font:18px sans-serif;margin:20px">
         <p>You can drag the following bookmarklets and register for the bookmark.</p>
-        <ul>${reloadBookmarkletListItems.join("")}</ul>
+        <ul>${dynamicScriptingBookmarkletListItems.join("")}</ul>
       </body>
       </html>
     `;
@@ -130,6 +109,56 @@ export class ReloadServer {
       content
     };
   };
+
+  private async createDynamicScriptingBookmarklet(filename: string): Promise<string> {
+    const scriptUrl = new URL("/file", this.origin);
+    scriptUrl.searchParams.set("filename", await sha256(filename));
+
+    const generalErrorMessage = removeIndent`
+      [BookmarkletOutputWebpackPlugin]
+      An error has occurred while loading the script.
+      It is possible that webpack has not been watched, the webpack process has not finished, the URL is invalid, or access to the local server has failed.
+      Please wait a moment and try again.
+    `;
+
+    const cspErrorMessage = removeIndent`
+      [BookmarkletOutputWebpackPlugin]
+      The script has been blocked by the CSP configured on this page.
+      Therefore, the dynamic scripting feature cannot be used on this page.
+    `;
+
+    const bookmarkletCode = oneLine`
+      (function(d){
+        var s=d.createElement('script'),
+            u=s.src=${embedJson(`${scriptUrl.href}&id=`)}
+              +new Date().getTime()+'-'+(Math.random()+'00000000').slice(2,9),
+            E=A(s,'error',function(){
+              alert(${embedJson(generalErrorMessage)});
+              R()
+            }),
+            V=A(d,'securitypolicyviolation',function(e){
+              e.blockedURI===u
+                &&e.disposition==='enforce'
+                &&(alert(${embedJson(cspErrorMessage)}),R())
+            }),
+            L=A(s,'load',R);
+        function A(t,n,f){
+          t.addEventListener(n,f);
+          return function(){
+            t.removeEventListener(n,f)
+          }
+        }
+        function R(){
+          E();
+          V();
+          L()
+        }
+        d.body.appendChild(s).parentNode.removeChild(s)
+      })(document)
+    `;
+
+    return `javascript:${encodeURIComponent(bookmarkletCode)}`;
+  }
 
   private createBookmarkletFileResponse(script: string): ResponseData {
     return {
