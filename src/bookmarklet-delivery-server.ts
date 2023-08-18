@@ -7,6 +7,13 @@ import { sha256 } from "./utils/sha-256";
 import { removeIndent, oneLine } from "./utils/format-template";
 import type { Compiler } from "webpack";
 
+type Options = {
+  port: number;
+  hashSalt: string;
+  hashStretching: number;
+  logger: ReturnType<Compiler["getInfrastructureLogger"]>;
+};
+
 type BookmarkletScript = {
   filename: string;
   script: string;
@@ -28,11 +35,16 @@ export class BookmarkletDeliveryServer {
   public readonly origin;
   private readonly server: Server;
   private bookmarkletScripts?: BookmarkletScript[];
+  public readonly port: number;
+  public readonly hashSalt;
+  public readonly hashStretching;
+  private readonly logger: ReturnType<Compiler["getInfrastructureLogger"]>;
 
-  public constructor(
-    public readonly port: number,
-    private readonly logger: ReturnType<Compiler["getInfrastructureLogger"]>
-  ) {
+  public constructor({ port, hashSalt, hashStretching: hashStretch, logger }: Options) {
+    this.port = port;
+    this.logger = logger;
+    this.hashSalt = hashSalt;
+    this.hashStretching = hashStretch;
     this.origin = `http://${this.host}:${this.port}`;
     this.server = createServer(this.handleRequest);
   }
@@ -61,6 +73,13 @@ export class BookmarkletDeliveryServer {
     res.end(responseData.content);
   };
 
+  private async hash(data: string): Promise<string> {
+    return await sha256(data, {
+      salt: this.hashSalt,
+      stretching: this.hashStretching
+    });
+  }
+
   private async createResponse(requestData: RequestData): Promise<ResponseData> {
     if (!this.bookmarkletScripts) {
       return this.createHttpErrorResponse({ status: 503, statusText: "Service Unavailable" });
@@ -71,7 +90,7 @@ export class BookmarkletDeliveryServer {
         return await this.createListResponse(this.bookmarkletScripts);
       case "/file":
         const found = await findAsync(this.bookmarkletScripts, async ({ filename }) => (
-          await sha256(filename) === requestData.reqUrl.searchParams.get("filename")
+          await this.hash(filename) === requestData.reqUrl.searchParams.get("filename")
         ));
         if (found) {
           return this.createBookmarkletFileResponse(found.script);
@@ -84,7 +103,7 @@ export class BookmarkletDeliveryServer {
 
   private async createListResponse(bookmarkletScripts: BookmarkletScript[]): Promise<ResponseData> {
     const dynamicScriptingBookmarkletListItems = await mapAsync(bookmarkletScripts, async ({ filename }) => {
-      const bookmarklet = this.createDynamicScriptingBookmarklet(filename);
+      const bookmarklet = await this.createDynamicScriptingBookmarklet(filename);
       return `<li><a href="${bookmarklet}">[w] ${escapeHtml(filename)}</a></li>`;
     });
 
@@ -112,7 +131,7 @@ export class BookmarkletDeliveryServer {
 
   private async createDynamicScriptingBookmarklet(filename: string): Promise<string> {
     const scriptUrl = new URL("/file", this.origin);
-    scriptUrl.searchParams.set("filename", await sha256(filename));
+    scriptUrl.searchParams.set("filename", await this.hash(filename));
 
     const generalErrorMessage = removeIndent`
       [BookmarkletOutputWebpackPlugin]

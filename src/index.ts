@@ -19,6 +19,9 @@ type Options = {
   removeEntryFile: boolean;
   createBookmarkletsList: (bookmarklets: Bookmarklet[]) => string;
   dynamicScripting: boolean;
+  serverPort: number;
+  createHashSalt: () => string;
+  hashStretching: number;
 };
 
 class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
@@ -51,6 +54,9 @@ class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
       `;
     },
     dynamicScripting: true,
+    serverPort: 3300,
+    createHashSalt: () => "BOOKMARKLET_OUTPUT_WEBPACK_PLUGIN_DEFAULT_STATIC_SALT",
+    hashStretching: 1000
   };
 
   public options: Options;
@@ -134,7 +140,12 @@ class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
 
     compiler.hooks.watchRun.tap(pluginName, () => {
       if (this.options.dynamicScripting && !this.server) {
-        this.server = new BookmarkletDeliveryServer(1234, logger);
+        this.server = new BookmarkletDeliveryServer({
+          port: this.options.serverPort,
+          hashSalt: this.options.createHashSalt(),
+          hashStretching: this.options.hashStretching,
+          logger
+        });
         this.server.start();
       }
     });
