@@ -1,6 +1,6 @@
 import path from "path";
 import { escapeHtml } from "./utils/escape-html";
-import { ReloadServer } from "./reload-server";
+import { BookmarkletDeliveryServer } from "./bookmarklet-delivery-server";
 import type { WebpackPluginInstance, Compiler } from "webpack";
 import { oneLine } from "./utils/format-template";
 
@@ -54,7 +54,7 @@ class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
   };
 
   public options: Options;
-  private server?: ReloadServer;
+  private server?: BookmarkletDeliveryServer;
 
   public constructor(options?: Partial<Options>) {
     this.options = {
@@ -134,7 +134,7 @@ class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
 
     compiler.hooks.watchRun.tap(pluginName, () => {
       if (this.options.dynamicScripting && !this.server) {
-        this.server = new ReloadServer(1234, logger);
+        this.server = new BookmarkletDeliveryServer(1234, logger);
         this.server.start();
       }
     });

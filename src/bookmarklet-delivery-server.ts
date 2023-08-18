@@ -23,7 +23,7 @@ type ResponseData = {
   content: any;
 };
 
-export class ReloadServer {
+export class BookmarkletDeliveryServer {
   public readonly host = "localhost";
   public readonly origin;
   private readonly server: Server;
