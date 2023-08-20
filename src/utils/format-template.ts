@@ -10,11 +10,15 @@ const templateUsingOriginalString = <T>(
 };
 
 export const removeIndent = templateUsingOriginalString((originalString) => {
-  return originalString
-    .replace(/^\s+/gm, "")
-    .trim();
+  const trimmed = originalString.replace(/^\n|\n[^\S\n]*$/g, "");
+  const lines = trimmed.split("\n");
+  const minIndent = lines.reduce((prev, line) => {
+    const spaceLen = line.search(/\S/);
+    return spaceLen !== -1 && spaceLen < prev ? spaceLen : prev;
+  }, Infinity);
+  return lines.map((line) => line.slice(minIndent)).join("\n");
 });
 
 export const oneLine = templateUsingOriginalString((originalString) => {
-  return originalString.replace(/^\s+|\n/gm, "");
+  return originalString.replace(/(?:\n|^)\s*/g, "");
 });

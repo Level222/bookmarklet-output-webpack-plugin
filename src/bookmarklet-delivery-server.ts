@@ -136,8 +136,10 @@ export class BookmarkletDeliveryServer {
     const generalErrorMessage = removeIndent`
       [BookmarkletOutputWebpackPlugin]
       An error has occurred while loading the script.
-      It is possible that webpack has not been watched, the webpack process has not finished, the URL is invalid, or access to the local server has failed.
-      Please wait a moment and try again.
+      The following are possible reasons.
+      - Webpack has not been watched.
+      - The webpack process has not finished.
+      - Access to localhost from this page has blocked.
     `;
 
     const cspErrorMessage = removeIndent`
