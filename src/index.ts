@@ -3,6 +3,7 @@ import { escapeHtml } from "./utils/escape-html";
 import { BookmarkletDeliveryServer } from "./bookmarklet-delivery-server";
 import type { WebpackPluginInstance, Compiler } from "webpack";
 import { oneLine } from "./utils/format-template";
+import { sha256 } from "./utils/sha-256";
 
 type Bookmarklet = {
   filename: string;
@@ -59,14 +60,16 @@ class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
     hashStretching: 1000
   };
 
-  public options: Options;
+  public options;
   private server?: BookmarkletDeliveryServer;
+  private readonly hashSalt;
 
   public constructor(options?: Partial<Options>) {
     this.options = {
       ...BookmarkletOutputWebpackPlugin.defaultOptions,
       ...options
     };
+    this.hashSalt = this.options.createHashSalt();
   }
 
   public apply(compiler: Compiler): void {
@@ -101,7 +104,17 @@ class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
           });;
 
           if (this.server) {
-            this.server.setBookmarkletScripts(bookmarkletScripts);
+            Promise.all(
+              bookmarkletScripts.map(async (bookmarkletScript) => {
+                const hash = await sha256(bookmarkletScript.filename, {
+                  salt: this.hashSalt,
+                  stretching: this.options.hashStretching
+                });
+                return { ...bookmarkletScript, hash };
+              })
+            ).then((bookmarkletSources) => {
+              this.server?.setBookmarkletSources(bookmarkletSources);
+            });
           }
 
           const bookmarklets: Bookmarklet[] = bookmarkletScripts.map(({ filename, script }) => {
@@ -142,8 +155,6 @@ class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
       if (this.options.dynamicScripting && !this.server) {
         this.server = new BookmarkletDeliveryServer({
           port: this.options.serverPort,
-          hashSalt: this.options.createHashSalt(),
-          hashStretching: this.options.hashStretching,
           logger
         });
         this.server.start();
