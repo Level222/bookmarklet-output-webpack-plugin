@@ -69,6 +69,38 @@ javascript:alert(%22Hello%22)%3B
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Bookmarklets</title><style>body{font:18px sans-serif;margin:20px}</style></head><body><p>You can drag the following bookmarklets and register for the bookmark.</p><ul><li><a href="javascript:alert(%22Hello%22)%3B">example-bookmarklet.js</a></li></ul></body></html>
 ```
 
+### Load Scripts Dynamically in Watch
+
+Register a dedicated bookmarklet and load the script dynamically from localhost while developing in watch mode.
+
+1. `npm run watch`
+2. Visit `http://localhost:3300`
+3. Register bookmarklets on the page
+
+There are a few things to keep in mind about this feature.
+
+#### Restrictions on Accessing Localhost.
+
+Different browsers have different restrictions on accessing localhost.
+
+For example, Chrome allows access from HTTPS pages, but blocks it from HTTP pages. However, this can be disabled from `chrome://flags/#block-insecure-private-network-requests`.
+
+In Safari, access from HTTPS is blocked as Mixed Content.
+
+For more information, [visit here](https://developer.chrome.com/blog/private-network-access-update/).
+
+#### CSP
+
+The script element is added to the page and may be blocked by CSP.
+
+#### Difference from Direct Execution
+
+The script does not run as a bookmarklet, resulting in the following problems.
+
+- Some browsers reject processes that must be handled by user gestures
+- The value of `document.currentScript` will not be null
+- Completion values of terminal statement do not affect the page
+
 ## Options
 
 ```typescript
@@ -107,7 +139,25 @@ type Options = {
   // default: (bookmarklets) => { /* ... */ }
   // Function to create a bookmarklets list.
   // You can customize bookmarklets list with this option.
-}
+
+  dynamicScripting: boolean;
+  // default: true
+  // Use dynamic scripting feature when running in watch mode
+
+  serverPort: number;
+  // default: 3300
+  // Localhost port for dynamic scripting
+
+  createHashSalt: () => string;
+  // default: () => "BOOKMARKLET_OUTPUT_WEBPACK_PLUGIN_DEFAULT_STATIC_SALT"
+  // Salt of hash value for filename protection when loading by dynamic scripting
+  // If a random value is returned, the value is determined at initialization, and the bookmarklet must be re-registered.
+
+  hashStretching: number;
+  // default: 1000
+  // Stretching count of hash value
+  // Large values may take longer to load.
+};
 ```
 
 ## Tips for Creating Bookmarklets
@@ -148,10 +198,6 @@ module.exports = {
 // dist/example-bookmarklet.js
 javascript:void alert("Hello");
 ```
-
-## Note
-
-This plugin does not support `webpack-dev-server`.
 
 ## License
 
