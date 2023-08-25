@@ -104,54 +104,81 @@ The script does not run as a bookmarklet, resulting in the following problems.
 ## Options
 
 ```typescript
-type Options = {
-  urlEncode?: boolean;
-  // default: true
-  // URL encoding.
+type Bookmarklet = {
+  filename: string;
+  bookmarklet: string;
+};
 
-  include?: RegExp;
-  // default: /\.js$/
-  // Regular expression for filenames to include.
+type PluginOptions = {
+  /**
+   * URL encoding.
+   * @default true
+   */
+  urlEncode: boolean;
 
-  newFile?: boolean;
-  // default: false
-  // Output as a new file.
+  /**
+   * Regular expression for filenames to include.
+   * @default /\.js$/
+   */
+  include: RegExp;
 
-  newFileName?: string;
-  // default: "[path][name].bookmarklet[ext]"
-  // Name of the new output file.
-  // "[path]", "[name]", and "[ext]" will be replaced.
+  /**
+   * Output as a new file.
+   * @default false
+   */
+  newFile: boolean;
 
-  bookmarkletsList?: boolean;
-  // default: false
-  // Output HTML file of the list of bookmarklets.
+  /**
+   * Name of the new output file.
+   * "[path]", "[name]", and "[ext]" will be replaced.
+   * @default "[path][name].bookmarklet[ext]"
+   */
+  newFileName: string;
 
-  bookmarkletsListName?: string;
-  // default: "bookmarklets.html"
-  // File name of the bookmarklets list.
+  /**
+   * Output HTML file of the list of bookmarklets.
+   * @default false
+   */
+  bookmarkletsList: boolean;
 
-  removeEntryFile?: boolean;
-  // default: false
-  // Remove entry js file.
-  // Use with bookmarkletsList and output only bookmarklets list.
+  /**
+   * File name of the bookmarklets list.
+   * @default "bookmarklets.html"
+   */
+  bookmarkletsListName: string;
 
-  createBookmarkletsList?: (bookmarklets: { filename: string; bookmarklet: string; }[]) => string;
-  // default: (bookmarklets) => { /* ... */ }
-  // Function to create a bookmarklets list.
-  // You can customize bookmarklets list with this option.
+  /**
+   * Remove entry js file.
+   * Use with bookmarkletsList and output only bookmarklets list.
+   * @default false
+   */
+  removeEntryFile: boolean;
 
+  /**
+   * Function to create a bookmarklets list.
+   * You can customize bookmarklets list with this option.
+   * @default (bookmarklets) => { }
+   */
+  createBookmarkletsList: (bookmarklets: Bookmarklet[]) => string;
+
+  /**
+   * Use dynamic scripting feature when running in watch mode.
+   * @default true
+   */
   dynamicScripting: boolean;
-  // default: true
-  // Use dynamic scripting feature when running in watch mode
 
+  /**
+   * Localhost port for dynamic scripting.
+   * @default 3300
+   */
   serverPort: number;
-  // default: 3300
-  // Localhost port for dynamic scripting
 
+  /**
+   * Function that return a hash value to protect the filename when loading dynamic scripts.
+   * The default is SHA-256, but customization improves security.
+   * @default (filename) => { }
+   */
   createFilenameHash: (filename: string) => string | Promise<string>;
-  // default: (filename) => { /* ... */ }
-  // Function that return a hash value to protect the filename when loading dynamic scripts.
-  // The default is SHA-256, but customization improves security.
 };
 ```
 

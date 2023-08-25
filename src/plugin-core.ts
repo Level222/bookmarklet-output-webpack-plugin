@@ -8,16 +8,74 @@ type Bookmarklet = {
 };
 
 export type PluginOptions = {
+  /**
+   * URL encoding.
+   * @default true
+   */
   urlEncode: boolean;
+
+  /**
+   * Regular expression for filenames to include.
+   * @default /\.js$/
+   */
   include: RegExp;
+
+  /**
+   * Output as a new file.
+   * @default false
+   */
   newFile: boolean;
+
+  /**
+   * Name of the new output file.
+   * "[path]", "[name]", and "[ext]" will be replaced.
+   * @default "[path][name].bookmarklet[ext]"
+   */
   newFileName: string;
+
+  /**
+   * Output HTML file of the list of bookmarklets.
+   * @default false
+   */
   bookmarkletsList: boolean;
+
+  /**
+   * File name of the bookmarklets list.
+   * @default "bookmarklets.html"
+   */
   bookmarkletsListName: string;
+
+  /**
+   * Remove entry js file.
+   * Use with bookmarkletsList and output only bookmarklets list.
+   * @default false
+   */
   removeEntryFile: boolean;
+
+  /**
+   * Function to create a bookmarklets list.
+   * You can customize bookmarklets list with this option.
+   * @default (bookmarklets) => { }
+   */
   createBookmarkletsList: (bookmarklets: Bookmarklet[]) => string;
+
+  /**
+   * Use dynamic scripting feature when running in watch mode.
+   * @default true
+   */
   dynamicScripting: boolean;
+
+  /**
+   * Localhost port for dynamic scripting.
+   * @default 3300
+   */
   serverPort: number;
+
+  /**
+   * Function that return a hash value to protect the filename when loading dynamic scripts.
+   * The default is SHA-256, but customization improves security.
+   * @default (filename) => { }
+   */
   createFilenameHash: (filename: string) => string | Promise<string>;
 };
 
