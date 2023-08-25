@@ -1,9 +1,9 @@
-import { Server, createServer } from "http";
+import type { Compiler } from "webpack";
+import { createServer } from "http";
 import type { IncomingMessage, ServerResponse } from "http";
 import { escapeHtml } from "./utils/escape-html";
 import { embedJson } from "./utils/embed-json";
 import { removeIndent, oneLine } from "./utils/format-template";
-import type { Compiler } from "webpack";
 
 type Options = {
   port: number;
@@ -29,17 +29,17 @@ type ResponseData = {
 
 export class BookmarkletDeliveryServer {
   public readonly host = "localhost";
+  public readonly port;
   public readonly origin;
-  private readonly server: Server;
+  private readonly server;
   private bookmarkletSources: BookmarkletSource[] = [];
-  public readonly port: number;
-  private isReady: boolean = false;
-  private readonly logger: ReturnType<Compiler["getInfrastructureLogger"]>;
+  private isReady = false;
+  private readonly logger;
 
   public constructor({ port, logger }: Options) {
     this.port = port;
-    this.logger = logger;
     this.origin = `http://${this.host}:${this.port}`;
+    this.logger = logger;
     this.server = createServer(this.handleRequest);
   }
 
@@ -48,8 +48,14 @@ export class BookmarkletDeliveryServer {
     this.logger.info(`Server started at ${this.origin}`);
   }
 
-  public setBookmarkletSources(scripts: BookmarkletSource[]): void {
-    this.bookmarkletSources = scripts;
+  public close(): void {
+    this.server.close((err) => {
+      console.error(err);
+    });
+  }
+
+  public setBookmarkletSources(sources: BookmarkletSource[]): void {
+    this.bookmarkletSources = sources;
   }
 
   public setIsReady(state: boolean): void {
@@ -58,12 +64,6 @@ export class BookmarkletDeliveryServer {
 
   public isStarted(): boolean {
     return this.server.listening;
-  }
-
-  public close(): void {
-    this.server.close((err) => {
-      console.error(err);
-    });
   }
 
   private handleRequest = (req: IncomingMessage, res: ServerResponse): void => {

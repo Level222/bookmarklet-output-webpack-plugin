@@ -1,7 +1,8 @@
-import { escapeHtml } from "./utils/escape-html";
 import type { WebpackPluginInstance, Compiler } from "webpack";
+import { PluginCore } from "./plugin-core";
+import type { PluginOptions } from "./plugin-core";
+import { escapeHtml } from "./utils/escape-html";
 import { oneLine } from "./utils/format-template";
-import { PluginCore, PluginOptions } from "./plugin-core";
 import { sha256 } from "./utils/sha-256";
 
 export class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
@@ -41,7 +42,7 @@ export class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
     })
   };
 
-  public options;
+  public options: PluginOptions;
 
   public constructor(options?: Partial<PluginOptions>) {
     this.options = {

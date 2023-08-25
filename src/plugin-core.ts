@@ -1,6 +1,6 @@
-import path from "path";
-import { BookmarkletDeliveryServer } from "./bookmarklet-delivery-server";
 import type { Compilation, Compiler } from "webpack";
+import { BookmarkletDeliveryServer } from "./bookmarklet-delivery-server";
+import path from "path";
 
 type Bookmarklet = {
   filename: string;
@@ -28,8 +28,8 @@ type Options = {
 };
 
 export class PluginCore {
-  public readonly options;
   public readonly pluginName;
+  public readonly options;
   public readonly compiler;
   private readonly logger;
   private readonly server;
