@@ -2,6 +2,7 @@ import { escapeHtml } from "./utils/escape-html";
 import type { WebpackPluginInstance, Compiler } from "webpack";
 import { oneLine } from "./utils/format-template";
 import { PluginCore, PluginOptions } from "./plugin-core";
+import { sha256 } from "./utils/sha-256";
 
 export class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
   public static defaultOptions: PluginOptions = {
@@ -34,8 +35,10 @@ export class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
     },
     dynamicScripting: true,
     serverPort: 3300,
-    createHashSalt: () => "BOOKMARKLET_OUTPUT_WEBPACK_PLUGIN_DEFAULT_STATIC_SALT",
-    hashStretching: 1000
+    createFilenameHash: (filename) => sha256(filename, {
+      salt: "BOOKMARKLET_OUTPUT_WEBPACK_PLUGIN_DEFAULT_STATIC_SALT",
+      stretching: 1000
+    })
   };
 
   public options;

@@ -1,7 +1,6 @@
 import path from "path";
 import { BookmarkletDeliveryServer } from "./bookmarklet-delivery-server";
 import type { Compilation, Compiler } from "webpack";
-import { sha256 } from "./utils/sha-256";
 
 type Bookmarklet = {
   filename: string;
@@ -19,8 +18,7 @@ export type PluginOptions = {
   createBookmarkletsList: (bookmarklets: Bookmarklet[]) => string;
   dynamicScripting: boolean;
   serverPort: number;
-  createHashSalt: () => string;
-  hashStretching: number;
+  createFilenameHash: (filename: string) => string | Promise<string>;
 };
 
 type Options = {
@@ -34,14 +32,12 @@ export class PluginCore {
   public readonly pluginName;
   public readonly compiler;
   private server?: BookmarkletDeliveryServer;
-  private readonly hashSalt;
   private readonly logger;
 
   public constructor(options: Options) {
     this.pluginName = options.name;
     this.options = options.pluginOptions;
     this.compiler = options.compiler;
-    this.hashSalt = this.options.createHashSalt();
     this.logger = this.compiler.getInfrastructureLogger(this.pluginName);
   }
 
@@ -90,10 +86,7 @@ export class PluginCore {
     if (this.server) {
       Promise.all(
         bookmarkletScripts.map(async (bookmarkletScript) => {
-          const hash = await sha256(bookmarkletScript.filename, {
-            salt: this.hashSalt,
-            stretching: this.options.hashStretching
-          });
+          const hash = await this.options.createFilenameHash(bookmarkletScript.filename);
           return { ...bookmarkletScript, hash };
         })
       ).then((bookmarkletSources) => {

@@ -148,15 +148,10 @@ type Options = {
   // default: 3300
   // Localhost port for dynamic scripting
 
-  createHashSalt: () => string;
-  // default: () => "BOOKMARKLET_OUTPUT_WEBPACK_PLUGIN_DEFAULT_STATIC_SALT"
-  // Salt of hash value for filename protection when loading by dynamic scripting
-  // If a random value is returned, the value is determined at initialization, and the bookmarklet must be re-registered.
-
-  hashStretching: number;
-  // default: 1000
-  // Stretching count of hash value
-  // Large values may take longer to load.
+  createFilenameHash: (filename: string) => string | Promise<string>;
+  // default: (filename) => { /* ... */ }
+  // Function that return a hash value to protect the filename when loading dynamic scripts.
+  // The default is SHA-256, but customization improves security.
 };
 ```
 
