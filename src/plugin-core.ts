@@ -31,18 +31,23 @@ export class PluginCore {
   public readonly options;
   public readonly pluginName;
   public readonly compiler;
-  private server?: BookmarkletDeliveryServer;
   private readonly logger;
+  private readonly server;
 
   public constructor(options: Options) {
     this.pluginName = options.name;
     this.options = options.pluginOptions;
     this.compiler = options.compiler;
     this.logger = this.compiler.getInfrastructureLogger(this.pluginName);
+    this.server = new BookmarkletDeliveryServer({
+      port: this.options.serverPort,
+      logger: this.logger
+    });
   }
 
   public registerPlugin(): void {
     this.compiler.hooks.thisCompilation.tap(this.pluginName, (compilation) => {
+      this.server.setIsReady(false);
       const { Compilation } = this.compiler.webpack;
       compilation.hooks.processAssets.tap(
         {
@@ -56,13 +61,13 @@ export class PluginCore {
     });
 
     this.compiler.hooks.watchRun.tap(this.pluginName, () => {
-      if (this.options.dynamicScripting && !this.server) {
-        this.startServer();
+      if (this.options.dynamicScripting && !this.server.isStarted()) {
+        this.server.start();
       }
     });
 
     this.compiler.hooks.watchClose.tap(this.pluginName, () => {
-      this.closeServer();
+      this.server.close();
     });
   }
 
@@ -83,14 +88,15 @@ export class PluginCore {
       return { filename, script };
     });
 
-    if (this.server) {
+    if (this.server.isStarted()) {
       Promise.all(
         bookmarkletScripts.map(async (bookmarkletScript) => {
           const hash = await this.options.createFilenameHash(bookmarkletScript.filename);
           return { ...bookmarkletScript, hash };
         })
       ).then((bookmarkletSources) => {
-        this.server?.setBookmarkletSources(bookmarkletSources);
+        this.server.setBookmarkletSources(bookmarkletSources);
+        this.server.setIsReady(true);
       });
     }
 
@@ -125,18 +131,5 @@ export class PluginCore {
       const bookmarkletsListSource = new RawSource(bookmarkletsList);
       compilation.emitAsset(this.options.bookmarkletsListName, bookmarkletsListSource);
     }
-  };
-
-  private startServer(): void {
-    this.server = new BookmarkletDeliveryServer({
-      port: this.options.serverPort,
-      logger: this.logger
-    });
-    this.server.start();
-  };
-
-  private closeServer(): void {
-    this.server?.close();
-    this.server = undefined;
   };
 }

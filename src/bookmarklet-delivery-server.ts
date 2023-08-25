@@ -31,8 +31,9 @@ export class BookmarkletDeliveryServer {
   public readonly host = "localhost";
   public readonly origin;
   private readonly server: Server;
-  private bookmarkletSources?: BookmarkletSource[];
+  private bookmarkletSources: BookmarkletSource[] = [];
   public readonly port: number;
+  private isReady: boolean = false;
   private readonly logger: ReturnType<Compiler["getInfrastructureLogger"]>;
 
   public constructor({ port, logger }: Options) {
@@ -51,6 +52,14 @@ export class BookmarkletDeliveryServer {
     this.bookmarkletSources = scripts;
   }
 
+  public setIsReady(state: boolean): void {
+    this.isReady = state;
+  }
+
+  public isStarted(): boolean {
+    return this.server.listening;
+  }
+
   public close(): void {
     this.server.close((err) => {
       console.error(err);
@@ -67,13 +76,13 @@ export class BookmarkletDeliveryServer {
   };
 
   private createResponse(requestData: RequestData): ResponseData {
-    if (!this.bookmarkletSources) {
+    if (!this.isReady) {
       return this.createHttpErrorResponse({ status: 503, statusText: "Service Unavailable" });
     }
 
     switch (requestData.reqUrl.pathname) {
       case "/":
-        return this.createListResponse(this.bookmarkletSources);
+        return this.createListResponse();
       case "/file":
         const found = this.bookmarkletSources.find(({ hash }) => (
           hash === requestData.reqUrl.searchParams.get("filename")
@@ -87,8 +96,8 @@ export class BookmarkletDeliveryServer {
     return this.createHttpErrorResponse({ status: 404, statusText: "Not Found" });
   };
 
-  private createListResponse(bookmarkletSources: BookmarkletSource[]): ResponseData {
-    const dynamicScriptingBookmarkletListItems = bookmarkletSources.map(({ filename, hash }) => {
+  private createListResponse(): ResponseData {
+    const dynamicScriptingBookmarkletListItems = this.bookmarkletSources.map(({ filename, hash }) => {
       const bookmarklet = this.createDynamicScriptingBookmarklet(hash);
       return `<li><a href="${bookmarklet}">[w] ${escapeHtml(filename)}</a></li>`;
     });
