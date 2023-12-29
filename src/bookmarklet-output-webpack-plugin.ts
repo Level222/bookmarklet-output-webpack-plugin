@@ -1,8 +1,6 @@
 import type { WebpackPluginInstance, Compiler } from "webpack";
 import { PluginCore } from "./plugin-core";
 import type { PluginOptions } from "./plugin-core";
-import { escapeHtml } from "./utils/escape-html";
-import { oneLine } from "./utils/format-template";
 import { sha256 } from "./utils/sha-256";
 import { createBookmarkletsList } from "./utils/create-bookmarklets-list";
 
