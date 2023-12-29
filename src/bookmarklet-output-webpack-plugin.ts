@@ -4,6 +4,7 @@ import type { PluginOptions } from "./plugin-core";
 import { escapeHtml } from "./utils/escape-html";
 import { oneLine } from "./utils/format-template";
 import { sha256 } from "./utils/sha-256";
+import { createBookmarkletsList } from "./utils/create-bookmarklets-list";
 
 export class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
   public static defaultOptions: PluginOptions = {
@@ -14,26 +15,9 @@ export class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
     bookmarkletsList: false,
     bookmarkletsListName: "bookmarklets.html",
     removeEntryFile: false,
-    createBookmarkletsList: (bookmarklets) => {
-      const bookmarkletsListItems = bookmarklets.map(({ filename, bookmarklet }) => (
-        `<li><a href="${escapeHtml(bookmarklet)}">${escapeHtml(filename)}</a></li>`
-      ));
-
-      return oneLine`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Bookmarklets</title>
-        </head>
-        <body style="font:18px sans-serif;margin:20px">
-          <p>You can drag the following bookmarklets and register for the bookmark.</p>
-          <ul>${bookmarkletsListItems.join("")}</ul>
-        </body>
-        </html>
-      `;
-    },
+    createBookmarkletsList: (bookmarklets) => createBookmarkletsList(bookmarklets.map(
+      ({ bookmarklet, filename }) => ({ bookmarklet, anchorText: filename }))
+    ),
     dynamicScripting: true,
     serverPort: 3300,
     createFilenameHash: (filename) => sha256(filename, {

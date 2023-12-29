@@ -4,6 +4,7 @@ import type { IncomingMessage, ServerResponse } from "http";
 import { escapeHtml } from "./utils/escape-html";
 import { embedJson } from "./utils/embed-json";
 import { removeIndent, oneLine } from "./utils/format-template";
+import { createBookmarkletsList } from "./utils/create-bookmarklets-list";
 
 type Options = {
   port: number;
@@ -97,25 +98,10 @@ export class BookmarkletDeliveryServer {
   };
 
   private createListResponse(): ResponseData {
-    const dynamicScriptingBookmarkletListItems = this.bookmarkletSources.map(({ filename, hash }) => {
-      const bookmarklet = this.createDynamicScriptingBookmarklet(hash);
-      return `<li><a href="${bookmarklet}">[w] ${escapeHtml(filename)}</a></li>`;
-    });
-
-    const content = oneLine`
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bookmarklets</title>
-      </head>
-      <body style="font:18px sans-serif;margin:20px">
-        <p>You can drag the following bookmarklets and register for the bookmark.</p>
-        <ul>${dynamicScriptingBookmarkletListItems.join("")}</ul>
-      </body>
-      </html>
-    `;
+    const content = createBookmarkletsList(this.bookmarkletSources.map(({ filename, hash }) => ({
+      bookmarklet: this.createDynamicScriptingBookmarklet(hash),
+      anchorText: `[w] ${escapeHtml(filename)}`
+    })));
 
     return {
       status: 200,
