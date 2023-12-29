@@ -73,7 +73,7 @@ javascript:alert(%22Hello%22)%3B
 
 Register a dedicated bookmarklet and load the script dynamically from localhost while developing in watch mode.
 
-1. `npm run watch`
+1. `webpack --watch`
 2. Visit `http://localhost:3300`
 3. Register bookmarklets on the page
 
@@ -87,7 +87,7 @@ For example, Chrome allows access from HTTPS pages, but blocks it from HTTP page
 
 In Safari, access from HTTPS is blocked as Mixed Content.
 
-For more information, [visit here](https://developer.chrome.com/blog/private-network-access-update/).
+For more information, visit [Private Network Access update: Introducing a deprecation trial - Chrome for Developers](https://developer.chrome.com/blog/private-network-access-update/)
 
 #### CSP
 
@@ -149,7 +149,7 @@ type PluginOptions = {
 
   /**
    * Remove entry js file.
-   * Use with bookmarkletsList and output only bookmarklets list.
+   * Use with bookmarkletsList option and output only bookmarklets list.
    * @default false
    */
   removeEntryFile: boolean;
@@ -157,7 +157,6 @@ type PluginOptions = {
   /**
    * Function to create a bookmarklets list.
    * You can customize bookmarklets list with this option.
-   * @default (bookmarklets) => { }
    */
   createBookmarkletsList: (bookmarklets: Bookmarklet[]) => string;
 
@@ -176,7 +175,6 @@ type PluginOptions = {
   /**
    * Function that return a hash value to protect the filename when loading dynamic scripts.
    * The default is SHA-256, but customization improves security.
-   * @default (filename) => { }
    */
   createFilenameHash: (filename: string) => string | Promise<string>;
 };

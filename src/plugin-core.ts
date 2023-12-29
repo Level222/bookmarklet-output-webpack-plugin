@@ -47,7 +47,7 @@ export type PluginOptions = {
 
   /**
    * Remove entry js file.
-   * Use with bookmarkletsList and output only bookmarklets list.
+   * Use with bookmarkletsList option and output only bookmarklets list.
    * @default false
    */
   removeEntryFile: boolean;
@@ -55,7 +55,6 @@ export type PluginOptions = {
   /**
    * Function to create a bookmarklets list.
    * You can customize bookmarklets list with this option.
-   * @default (bookmarklets) => { }
    */
   createBookmarkletsList: (bookmarklets: Bookmarklet[]) => string;
 
@@ -74,7 +73,6 @@ export type PluginOptions = {
   /**
    * Function that return a hash value to protect the filename when loading dynamic scripts.
    * The default is SHA-256, but customization improves security.
-   * @default (filename) => { }
    */
   createFilenameHash: (filename: string) => string | Promise<string>;
 };
