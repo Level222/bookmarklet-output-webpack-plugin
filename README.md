@@ -167,10 +167,16 @@ type PluginOptions = {
   dynamicScripting: boolean;
 
   /**
-   * Localhost port for dynamic scripting.
+   * Server port for dynamic scripting.
    * @default 3300
    */
   serverPort: number;
+
+  /**
+   * Server hostname for dynamic scripting.
+   * @default "localhost"
+   */
+  serverHost: string;
 
   /**
    * Function that return a hash value to protect the filename when loading dynamic scripts.

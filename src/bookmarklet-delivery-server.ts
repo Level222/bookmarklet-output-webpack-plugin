@@ -8,6 +8,7 @@ import { createBookmarkletsList } from "./utils/create-bookmarklets-list";
 
 type Options = {
   port: number;
+  host: string;
   logger: ReturnType<Compiler["getInfrastructureLogger"]>;
 };
 
@@ -29,7 +30,7 @@ type ResponseData = {
 };
 
 export class BookmarkletDeliveryServer {
-  public readonly host = "localhost";
+  public readonly host;
   public readonly port;
   public readonly origin;
   private readonly server;
@@ -37,15 +38,16 @@ export class BookmarkletDeliveryServer {
   private isReady = false;
   private readonly logger;
 
-  public constructor({ port, logger }: Options) {
+  public constructor({ port, host, logger }: Options) {
     this.port = port;
+    this.host = host;
     this.origin = `http://${this.host}:${this.port}`;
     this.logger = logger;
     this.server = createServer(this.handleRequest);
   }
 
   public start(): void {
-    this.server.listen(this.port);
+    this.server.listen(this.port, this.host);
     this.logger.info(`Server started at ${this.origin}`);
   }
 
