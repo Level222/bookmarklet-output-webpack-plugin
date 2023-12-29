@@ -7,6 +7,7 @@ import { createBookmarkletsList } from "./utils/create-bookmarklets-list";
 export class BookmarkletOutputWebpackPlugin implements WebpackPluginInstance {
   public static defaultOptions: PluginOptions = {
     urlEncode: true,
+    ensureUndefined: true,
     include: /\.js$/,
     newFile: false,
     newFileName: "[path][name].bookmarklet[ext]",

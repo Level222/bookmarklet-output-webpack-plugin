@@ -15,6 +15,14 @@ export type PluginOptions = {
   urlEncode: boolean;
 
   /**
+   * Ensure that the completion values of terminal statement is undefined.
+   * If you use Terser to minify, you need to enable Terser's 'expression' option.
+   * For Other minimizers, you need to use a similar feature.
+   * @default true
+   */
+  ensureUndefined: boolean;
+
+  /**
    * Regular expression for filenames to include.
    * @default /\.js$/
    */
@@ -118,13 +126,24 @@ export class PluginCore {
     this.compiler.hooks.thisCompilation.tap(this.pluginName, (compilation) => {
       this.server.setIsReady(false);
       const { Compilation } = this.compiler.webpack;
+
+      compilation.hooks.processAssets.tap(
+        {
+          name: this.pluginName,
+          stage: Compilation.PROCESS_ASSETS_STAGE_PRE_PROCESS
+        },
+        () => {
+          this.processAssetsPreProcess(compilation);
+        }
+      );
+
       compilation.hooks.processAssets.tap(
         {
           name: this.pluginName,
           stage: Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE - 1
         },
         () => {
-          this.processAssets(compilation);
+          this.processAssetsBeforeSummarize(compilation);
         }
       );
     });
@@ -140,22 +159,46 @@ export class PluginCore {
     });
   }
 
-  private processAssets(compilation: Compilation): void {
+  private getTargetAssetTexts(assets: Compilation["assets"]): Map<string, string> {
+    return new Map(
+      Object.entries(assets).flatMap(([filename, asset]) => {
+        if (!this.options.include.test(filename)) {
+          return [];
+        }
+
+        const content = asset.source();
+        if (typeof content !== "string") {
+          throw new TypeError(`${filename} is not a text file.`);
+        }
+
+        return [[filename, content]];
+      })
+    );
+  }
+
+  private processAssetsPreProcess(compilation: Compilation): void {
+    if (!this.options.ensureUndefined) {
+      return;
+    }
+
     const { RawSource } = this.compiler.webpack.sources;
 
-    const targetAssets = Object.entries(compilation.assets).filter(([filename]) => (
-      this.options.include.test(filename)
-    ));
+    const targetAssets = this.getTargetAssetTexts(compilation.assets);
 
-    const bookmarkletScripts = targetAssets.map(([filename, asset]) => {
-      const script = asset.source();
+    for (const [filename, script] of targetAssets) {
+      const newScript = `${script};void 0;`;
+      compilation.updateAsset(filename, new RawSource(newScript));
+    }
+  }
 
-      if (typeof script !== "string") {
-        throw new TypeError(`${filename} is not a text file.`);
-      }
+  private processAssetsBeforeSummarize(compilation: Compilation): void {
+    const { RawSource } = this.compiler.webpack.sources;
 
-      return { filename, script };
-    });
+    const targetAssetTexts = this.getTargetAssetTexts(compilation.assets);
+
+    const bookmarkletScripts = [...targetAssetTexts].map(
+      ([filename, script]) => ({ filename, script })
+    );
 
     if (this.server.isStarted()) {
       Promise.all(

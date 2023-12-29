@@ -79,7 +79,7 @@ Register a dedicated bookmarklet and load the script dynamically from localhost 
 
 There are a few things to keep in mind about this feature.
 
-#### Restrictions on Accessing Localhost.
+#### Restrictions on Accessing Localhost
 
 Different browsers have different restrictions on accessing localhost.
 
@@ -101,6 +101,43 @@ The script does not run as a bookmarklet, resulting in the following problems.
 - The value of `document.currentScript` will not be null
 - Completion values of terminal statement do not affect the page
 
+### Ensure That the Completion Values of Terminal Statement Is `undefined`
+
+When you run the bookmarklet, if the completion value of the terminal statement is not `undefined`, the contents of the page will be replaced with the completion value.
+
+Webpack wraps the code in an IIFE unless the `output.iife` option is `false`, so the completion value is usually `undefined`. Also, the `ensureUndefined` option of this plugin adds `;void 0;` to the end of the code, so the completion value is always `undefined`. However, when the code is minified, the IIFE and `;void 0;` may be removed.
+
+Therefore, it is recommended to enable the `expression` option of the Terser Webpack Plugin.
+
+```shell
+npm i -D terser-webpack-plugin
+```
+
+```javascript
+// webpack.config.js
+const TerserPlugin = require("terser-webpack-plugin");
+
+module.exports = {
+  // ...
+  optimization: {
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          compress: {
+            expression: true
+          }
+        }
+      })
+    ]
+  }
+};
+```
+
+```javascript
+// dist/example-bookmarklet.js
+javascript:void alert("Hello");
+```
+
 ## Options
 
 ```typescript
@@ -115,6 +152,14 @@ type PluginOptions = {
    * @default true
    */
   urlEncode: boolean;
+
+  /**
+   * Ensure that the completion values of terminal statement is undefined.
+   * If you use Terser to minify, you need to enable Terser's 'expression' option.
+   * For Other minimizers, you need to use a similar feature.
+   * @default true
+   */
+  ensureUndefined: boolean;
 
   /**
    * Regular expression for filenames to include.
@@ -190,45 +235,6 @@ type PluginOptions = {
    */
   createFilenameHash: (filename: string) => string | Promise<string>;
 };
-```
-
-## Tips for Creating Bookmarklets
-
-### Always Set Completion Values of Terminal Statement to `undefined`
-
-When you run the bookmarklet, if the completion value of the terminal statement is not `undefined`, the contents of the page will be replaced with the completion value.
-
-Webpack wraps the code in an IIFE, so the completion value is usually `undefined`. However, when the code is minified, the IIFE may be removed.
-
-Therefore, it is recommended to enable the `expression` option of the Terser Webpack Plugin.
-
-```shell
-npm i -D terser-webpack-plugin
-```
-
-```javascript
-// webpack.config.js
-const TerserPlugin = require("terser-webpack-plugin");
-
-module.exports = {
-  // ...
-  optimization: {
-    minimizer: [
-      new TerserPlugin({
-        terserOptions: {
-          compress: {
-            expression: true
-          }
-        }
-      })
-    ]
-  }
-};
-```
-
-```javascript
-// dist/example-bookmarklet.js
-javascript:void alert("Hello");
 ```
 
 ## License
