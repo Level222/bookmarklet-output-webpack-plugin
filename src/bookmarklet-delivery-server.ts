@@ -5,9 +5,11 @@ import { escapeHtml } from "./utils/escape-html";
 import { embedJson } from "./utils/embed-json";
 import { removeIndent, oneLine } from "./utils/format-template";
 import { createBookmarkletsList } from "./utils/create-bookmarklets-list";
+import { isPortInUse } from "./utils/is-port-in-use";
 
 type Options = {
   port: number;
+  fallbackPort: boolean;
   host: string;
   logger: ReturnType<Compiler["getInfrastructureLogger"]>;
 };
@@ -30,25 +32,49 @@ type ResponseData = {
 };
 
 export class BookmarkletDeliveryServer {
+  public readonly defaultPort;
+  public readonly fallbackPort;
   public readonly host;
-  public readonly port;
-  public readonly origin;
+  public currentPort?: number;
   private readonly server;
   private bookmarkletSources: BookmarkletSource[] = [];
   private isReady = false;
   private readonly logger;
 
-  public constructor({ port, host, logger }: Options) {
-    this.port = port;
+  public constructor({ port, fallbackPort, host, logger }: Options) {
+    this.defaultPort = port;
+    this.fallbackPort = fallbackPort;
     this.host = host;
-    this.origin = `http://${this.host}:${this.port}`;
     this.logger = logger;
     this.server = createServer(this.handleRequest);
   }
 
-  public start(): void {
-    this.server.listen(this.port, this.host);
-    this.logger.info(`Server started at ${this.origin}`);
+  public async start(): Promise<void> {
+    if (this.fallbackPort) {
+      for (let i = 0; i < 20; i++) {
+        const port = this.defaultPort + i;
+
+        if (await isPortInUse(port)) {
+          this.logger.info(`Port ${port} is already in use`);
+        } else {
+          this.currentPort = port;
+          break;
+        }
+      }
+
+      if (!this.currentPort) {
+        throw new TypeError("Maximum fallback attempts reached.");
+      }
+    } else {
+      if (await isPortInUse(this.defaultPort)) {
+        throw new TypeError(`Port ${this.defaultPort} is already in use`);
+      }
+
+      this.currentPort = this.defaultPort;
+    }
+
+    this.server.listen(this.defaultPort, this.host);
+    this.logger.info(`Server started at ${this.getOrigin(this.currentPort)}`);
   }
 
   public close(): void {
@@ -69,8 +95,16 @@ export class BookmarkletDeliveryServer {
     return this.server.listening;
   }
 
+  public getOrigin(port: number): string {
+    return `http://${this.host}:${port}`;
+  }
+
   private handleRequest = (req: IncomingMessage, res: ServerResponse): void => {
-    const reqUrl = new URL(req.url ?? "", this.origin);
+    if (!this.currentPort) {
+      throw new TypeError("Current port is undefined.");
+    }
+
+    const reqUrl = new URL(req.url ?? "", this.getOrigin(this.currentPort));
     const requestData: RequestData = { reqUrl, req };
     const responseData = this.createResponse(requestData);
     res.statusCode = responseData.status;
@@ -110,10 +144,14 @@ export class BookmarkletDeliveryServer {
       contentType: "text/html",
       content
     };
-  };
+  }
 
   private createDynamicScriptingBookmarklet(hash: string): string {
-    const scriptUrl = new URL("/file", this.origin);
+    if (!this.currentPort) {
+      throw new TypeError("Current port is undefined.");
+    }
+
+    const scriptUrl = new URL("/file", this.getOrigin(this.currentPort));
     scriptUrl.searchParams.set("filename", hash);
 
     const generalErrorMessage = removeIndent`

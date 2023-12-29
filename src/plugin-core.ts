@@ -71,6 +71,11 @@ export type PluginOptions = {
   serverPort: number;
 
   /**
+   * Fall back if the port was already in use.
+   */
+  fallbackPort: boolean;
+
+  /**
    * Server hostname for dynamic scripting.
    * @default "localhost"
    */
@@ -103,6 +108,7 @@ export class PluginCore {
     this.logger = this.compiler.getInfrastructureLogger(this.pluginName);
     this.server = new BookmarkletDeliveryServer({
       port: this.options.serverPort,
+      fallbackPort: this.options.fallbackPort,
       host: this.options.serverHost,
       logger: this.logger
     });

@@ -173,6 +173,12 @@ type PluginOptions = {
   serverPort: number;
 
   /**
+   * Fall back if the port was already in use.
+   * @default true
+   */
+  fallbackPort: boolean;
+
+  /**
    * Server hostname for dynamic scripting.
    * @default "localhost"
    */
